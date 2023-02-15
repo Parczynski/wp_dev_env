@@ -1,0 +1,51 @@
+version: '3.7'
+
+services:
+  site:
+    image: wordpress:php8.1
+    restart: always
+    depends_on:
+      - database
+    environment:
+      TZ: Europe/Moscow
+      WORDPRESS_DB_HOST: database
+      WORDPRESS_DB_USER: user
+      WORDPRESS_DB_PASSWORD: secret
+      WORDPRESS_DB_NAME: dbname
+    volumes:
+      - ./wordpress:/var/www/html
+    
+
+  database:
+    image: mariadb:latest
+    restart: always
+    environment:
+      MARIADB_USER: user
+      MARIADB_PASSWORD: secret
+      MARIADB_ROOT_PASSWORD: secret
+      MARIADB_DATABASE: dbname
+    volumes:
+      # - ./dump.sql:/docker-entrypoint-initdb.d/dump.sql
+
+  nginx:
+    image: nginx:1.23
+    restart: always
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d:ro
+      - ./nginx/acme:/var/www/certbot:ro
+      - ./nginx/certs:/etc/nginx/ssl:ro
+    depends_on:
+      - site
+    ports:
+      - 80:80
+      - 443:443
+
+  phpmyadmin:
+    depends_on:
+      - database
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - 8000:80
+    environment:
+      PMA_HOST: database
+      MYSQL_ROOT_PASSWORD: secret
